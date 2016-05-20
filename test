@@ -1,0 +1,35 @@
+
+
+- name: Install MySQL for debian
+  hosts: debian
+  vars:
+    MySQL_root_pass: testabcd
+  tasks:
+- name: Set  password.
+     debconf: name='mysql-server' question='mysql-server/testabcd' value='{{testabcd | quote}}'       vtype='password'
+- name: Confirm  password.
+    debconf: name='mysql-server' question='mysql-server/root_password_again' value='{{testabcd | quote}}' vtype='password'
+- name: Install MySQL
+  apt: package={{ item }} state=installed force=yes update_cache=yes cache_valid_time=3600
+    when: ansible_os_family == 'Debian'
+    with_items:
+      - mysql-server
+      - mysql-client
+       
+- hosts: debian
+  tasks: process on Debian based system
+- name: Regiter service on start up
+  command: sudo update-rc.d apache2 defaults
+  command: sudo update-rc.d tomcat6 defaults
+  command: sudo update-rc.d mysql defaults
+
+- hosts: rhel
+  tasks:process on RHEL  based system
+- name: Regiter service on start up
+  yum: name=mysql-server state=present
+  command: chkconfig --level 345 httpd on
+  command: chkconfig --level 345 tomcat6 on
+  command: chkconfig --level 345 mysql on
+
+
+
