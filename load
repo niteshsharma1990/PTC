@@ -1,0 +1,70 @@
+source property file having HTTPD_DIST set for machine
+
+- name: Load balancing using mod_jk
+  hosts: load_balancing
+  tasks:
+ - lineinfile: dest=HTTPD_DIST/conf/httpd.conf line="Include conf/mod-jk.conf"
+   when: test_grep.stdout != ""
+ - copy: src=/artifact/mod-jk.conf dest=HTTPD_DIST/conf/mod-jk.conf owner=root group=foo mode=0644
+ - copy: src=/artifact/uriworkermap.properties dest=HTTPD_DIST/conf/uriworkermap.properties owner=root group=foo mode=0644
+ - lineinfile: dest=HTTPD_DIST/conf/httpd.conf line="JkMountFile conf/uriworkermap.properties"
+   when: test_grep.stdout != ""
+
+
+
+
+
+Following files should be present in artifact directory to be copied to remote machine
+
+--------------- mod-jk.conf---------------------
+
+# Load mod_jk module
+# Specify the filename of the mod_jk lib
+LoadModule jk_module modules/mod_jk.so
+ 
+# Where to find workers.properties
+JkWorkersFile conf/workers.properties
+
+# Where to put jk logs
+JkLogFile logs/mod_jk.log
+ 
+# Set the jk log level [debug/error/info]
+JkLogLevel info 
+ 
+# Select the log format
+JkLogStampFormat  "[%a %b %d %H:%M:%S %Y]"
+ 
+# JkOptions indicates to send SSK KEY SIZE
+JkOptions +ForwardKeySize +ForwardURICompat -ForwardDirectories
+ 
+# JkRequestLogFormat
+JkRequestLogFormat "%w %V %T"
+               
+# Mount your applications
+JkMount /application/* loadbalancer
+ 
+# Add shared memory.
+# This directive is present with 1.2.10 and
+# later versions of mod_jk, and is needed for
+# for load balancing to work properly
+JkShmFile logs/jk.shm 
+              
+# Add jkstatus for managing runtime data
+<Location /jkstatus/>
+    JkMount status
+    Order deny,allow
+    Deny from all
+    Allow from 127.0.0.1
+</Location>
+
+------------------- uriworkermap.properties---------------------
+
+# Simple worker configuration file
+
+# Mount the Servlet context to the ajp13 worker
+/jmx-console=loadbalancer
+/jmx-console/*=loadbalancer
+/web-console=loadbalancer
+/web-console/*=loadbalancer
+
+
